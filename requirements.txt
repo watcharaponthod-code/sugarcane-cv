@@ -1,0 +1,9 @@
+torch>=2.2
+torchvision>=0.17
+numpy>=1.26
+opencv-python>=4.9
+Pillow>=10.0
+# acoustic only
+soundfile>=0.12
+diffusers>=0.27
+transformers>=4.40
