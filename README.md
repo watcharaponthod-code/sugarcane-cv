@@ -234,7 +234,7 @@ Two independent engines are implemented:
 | **pure CV** | morphology → connected components → template correlation | zero ML, runs on a Raspberry Pi, every step explainable |
 
 **The design rule: if it answers, it must be right.** The goal is not reading every truck.
-it is that every plate written to the CSV is trustworthy. Weak evidence returns
+It is that every plate written to the CSV is trustworthy. Weak evidence returns
 `accepted=false` with a reason and goes to a human. One wrong row costs more than ten
 confirmations.
 
