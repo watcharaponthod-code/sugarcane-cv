@@ -1,73 +1,70 @@
-# Sugarcane CV: what arrives on the truck, measured automatically
+# Sugarcane CV: วัดสิ่งที่มากับรถบรรทุกแบบอัตโนมัติ
 
-Nine detection problems from one real project at a Thai sugar mill: reading the truck,
-grading the load, and watching the cane flow into the mill, using CCTV, from webcams at
-the weighbridge, and from a microphone at the tipping bay.
+เก้าโจทย์ตรวจจับจากโปรเจ็คจริงโปรเจ็คเดียวในโรงงานน้ำตาลไทย ตั้งแต่อ่านตัวรถ คัดเกรดของที่บรรทุกมา
+ไปจนถึงเฝ้าดูอ้อยไหลเข้าหม้อหีบ ใช้ทั้งกล้อง CCTV เว็บแคมที่ตาชั่ง และไมโครโฟนที่จุดเท
 
-Training and core algorithm code only. **No model weights, no customer footage.**
-Every number states the evidence it rests on, including the ones that do not hold up.
+ในนี้มีแค่โค้ดเทรนกับอัลกอริทึมหลัก **ไม่มีไฟล์โมเดล ไม่มีภาพของลูกค้า**
+ตัวเลขทุกตัวบอกว่าตั้งอยู่บนหลักฐานอะไร รวมถึงตัวที่ยังเชื่อไม่ได้
 
-![dust detection on real footage](media/dust_real.gif)
+![ตรวจฝุ่นบนคลิปจริง](media/dust_real.gif)
 
-*Dust opacity scored per zone as a side tippler empties a truck. Public footage, qualitative run.*
+*วัดความทึบของฝุ่นแยกตามโซน ขณะที่เครื่องเทข้างเทอ้อยลงจากรถ เป็นคลิปสาธารณะ รันเพื่อดูเชิงคุณภาพ*
 
-| # | Problem | How it is solved | Evidence | Status |
-|---|---------|------------------|----------|--------|
-| 1 | [Dust opacity during tipping](#1-dust-opacity) | model + my own check | synthetic test set | shipped, unvalidated on real dust |
-| 2 | [Burnt vs fresh cane](#2-burnt-vs-fresh-cane) | trained model | **8,612 real CCTV images** | works, camera-bound |
-| 3 | [Burnt cane mixed into a load](#3-burnt-cane-mixed-in) | **no model, colour only** | simulated mixes | rule found, threshold unset |
-| 4 | [Soil / trash / dirty area](#4-dirty-area) | trained model | 65 real images | inconclusive, data-bound |
-| 5 | [Sand, rock, metal by sound](#5-acoustic-contaminants) | trained model, on sound | **real yard audio** | sand solved |
-| 6 | [Cane flow on the carrier](#6-cane-flow-on-the-carrier) | trained model, teaches itself | **real mill video** | running at 70 fps |
-| 7 | [Thai licence plate OCR](#7-thai-licence-plate-ocr) | **two readers, one with no model** | 60-image stress set | 0 wrong answers by design |
-| 8 | [Is there cane on the truck?](#8-is-there-cane-on-the-truck) | **no model, edges only** | site deployment | 3.9 ms/frame |
-| 9 | [Stalk segmentation](#9-stalk-segmentation) | trained model | 31 hand labels | supporting work |
+| # | โจทย์ | แก้ด้วยวิธีไหน | หลักฐาน | สถานะ |
+|---|-------|----------------|---------|-------|
+| 1 | [ความทึบของฝุ่นตอนเท](#1-ความทึบของฝุ่น) | โมเดล + กฎที่เขียนเอง | ชุดทดสอบสังเคราะห์ | ใช้งานแล้ว แต่ยังไม่ได้ตรวจกับฝุ่นจริง |
+| 2 | [อ้อยไฟไหม้กับอ้อยสด](#2-อ้อยไฟไหม้กับอ้อยสด) | โมเดลที่เทรนมา | **ภาพ CCTV จริง 8,612 ภาพ** | ใช้ได้ แต่ผูกกับกล้อง |
+| 3 | [อ้อยไฟไหม้ปนมาในคันเดียวกัน](#3-อ้อยไฟไหม้ปนมา) | **ไม่ใช้โมเดล ใช้แค่สี** | ภาพผสมจำลอง | เจอกฎแล้ว ยังไม่ได้ตั้งค่าตัด |
+| 4 | [ดิน เศษใบ สิ่งปนเปื้อน](#4-พื้นที่สกปรก) | โมเดลที่เทรนมา | ภาพจริง 65 ภาพ | ยังสรุปไม่ได้ ติดที่ข้อมูล |
+| 5 | [ทราย หิน เหล็ก จากเสียง](#5-สิ่งปนเปื้อนจากเสียง) | โมเดลที่เทรนมา ใช้กับเสียง | **เสียงจริงจากลานเท** | ทรายแก้ได้แล้ว |
+| 6 | [อ้อยไหลบนสายพาน](#6-อ้อยไหลบนสายพาน) | โมเดลที่สอนตัวเองต่อได้ | **วิดีโอจริงในโรงงาน** | รันอยู่ที่ 70 fps |
+| 7 | [อ่านป้ายทะเบียนไทย](#7-อ่านป้ายทะเบียนไทย) | **มีสองตัวอ่าน ตัวหนึ่งไม่ใช้โมเดล** | ชุดทดสอบโหด 60 ภาพ | ออกแบบให้ตอบผิด 0 |
+| 8 | [บนรถมีอ้อยหรือเปล่า](#8-บนรถมีอ้อยหรือเปล่า) | **ไม่ใช้โมเดล ดูแค่ขอบ** | ติดตั้งใช้จริงหน้างาน | 3.9 ms ต่อเฟรม |
+| 9 | [ตีเส้นลำอ้อย](#9-ตีเส้นลำอ้อย) | โมเดลที่เทรนมา | label ทำมือ 31 ภาพ | เป็นงานสนับสนุน |
 
-## Two maps
+## แผนที่สองใบ
 
-Where each detector sits on the site:
+ตัวตรวจจับแต่ละตัวอยู่ตรงไหนของหน้างาน
 
-![where each detector runs](figures/site_map.svg)
+![ตัวตรวจจับแต่ละตัวอยู่ตรงไหน](figures/site_map.svg)
 
-And how each one was solved. Some problems need a neural network. Two here did not get one,
-because a rule I can read and explain was already enough:
+และแต่ละอันแก้ด้วยวิธีไหน บางโจทย์ต้องใช้ neural network จริง แต่ในนี้มีสองตัวที่ไม่ได้ใช้
+เพราะกฎที่ผมอ่านเองได้และอธิบายได้ก็พอแล้ว
 
-![how each problem was solved](figures/method_map.svg)
+![แต่ละโจทย์แก้ด้วยวิธีไหน](figures/method_map.svg)
 
 ---
 
-## 1. Dust opacity
+## 1. ความทึบของฝุ่น
 
-**In plain words.** When a truck tips, dust flies up. The system watches the dust and says how thick it is. A model marks the dust pixels. Then my own check asks one question: does this really look like dust in the air? If not, the alarm is dropped.
+**พูดแบบง่าย ๆ** ตอนรถเทอ้อย ฝุ่นจะฟุ้งขึ้นมา ระบบเฝ้าดูฝุ่นแล้วบอกว่าหนาแค่ไหน โมเดลเป็นคนทำเครื่องหมายว่าพิกเซลไหนคือฝุ่น จากนั้นกฎที่ผมเขียนเองจะถามคำถามเดียวว่า ตรงนี้ดูเหมือนฝุ่นลอยในอากาศจริงหรือเปล่า ถ้าไม่ใช่ก็ตัดการแจ้งเตือนทิ้ง
 
-How opaque the dust cloud gets when a truck tips its load, scored per bay, written to an
-event log for mist-sprayer control and environmental reporting.
+วัดว่ากลุ่มฝุ่นทึบแค่ไหนตอนรถเทของลง แยกคะแนนรายช่องเท แล้วเขียนลง event log
+เพื่อสั่งสเปรย์น้ำและใช้รายงานด้านสิ่งแวดล้อม
 
-**Approach.** LR-ASPP segmentation with a density head (threshold 0.29), followed by a
-*zone-evidence veto*: each bay's `detected%` is weighted by the fraction of pixels that
-actually look like airborne haze. That removes false alarms from static black cane piles
-and truck beds without retraining anything.
+**วิธีทำ** ใช้ LR-ASPP segmentation ต่อด้วย density head (ค่าตัด 0.29) แล้วตามด้วย
+*zone-evidence veto* คือถ่วงน้ำหนัก `detected%` ของแต่ละช่องด้วยสัดส่วนพิกเซลที่ดูเหมือนฝุ่นลอยจริง ๆ
+วิธีนี้ตัดการแจ้งเตือนผิดจากกองอ้อยดำนิ่ง ๆ และกระบะรถออกไปได้ โดยไม่ต้องเทรนโมเดลใหม่
 
 ![base model vs veto](media/dust_base_vs_veto.gif)
 
-*Same clip, base model vs veto. The base model flags the dark pile; the veto does not.*
+*คลิปเดียวกัน เทียบโมเดลเปล่ากับโมเดลที่มี veto โมเดลเปล่าแจ้งเตือนกองอ้อยสีเข้ม ตัวที่มี veto ไม่แจ้ง*
 
 ![multi-bay live demo](media/dust_multibay.gif)
 
-*Three bays scored independently in one frame, with per-bay event logging.*
+*สามช่องเทถูกให้คะแนนแยกกันในเฟรมเดียว พร้อมบันทึก event แยกรายช่อง*
 
-**The honest limitation.** The scored test set contains no real photograph with dust in it.
-Every positive sample is AI-generated; the two real photographs available show an empty yard
-and both were training data. So every recall number is a *logic test of the pipeline on
-synthetic input*, not a field accuracy. The clips above are qualitative demonstration runs on
-public footage. They are not part of any scored evaluation, and a trustworthy false-positive
-rate still needs fresh empty-yard footage the model has never seen.
+**ข้อจำกัดที่ต้องบอกตรง ๆ** ชุดทดสอบที่ให้คะแนนไว้ไม่มีภาพถ่ายจริงที่มีฝุ่นอยู่เลยสักภาพ
+ตัวอย่างฝั่งบวกทั้งหมดเป็นภาพที่ AI สร้าง ส่วนภาพจริงที่มีอยู่สองภาพเป็นลานเปล่าและถูกใช้เทรนไปแล้ว
+ดังนั้นค่า recall ทุกตัวคือ *การทดสอบตรรกะของ pipeline บนอินพุตสังเคราะห์* ไม่ใช่ความแม่นในสนามจริง
+คลิปข้างบนเป็นการสาธิตเชิงคุณภาพบนคลิปสาธารณะ ไม่ได้นับรวมในการให้คะแนนใด ๆ
+และถ้าอยากได้อัตราแจ้งเตือนผิดที่เชื่อถือได้ ยังต้องใช้คลิปลานเปล่าใหม่ที่โมเดลไม่เคยเห็น
 
 ![dust model comparison](figures/dust_model_compare.jpg)
 
-*Model generations on the same tipping clip.*
+*โมเดลแต่ละรุ่นบนคลิปเทเดียวกัน*
 
-Before any learned model, the opacity equation itself was validated in simulation:
+ก่อนจะมีโมเดลตัวไหน สมการความทึบเองถูกตรวจสอบในการจำลองก่อน
 
 ![opacity simulation](figures/opacity_sim_summary.png)
 
@@ -75,247 +72,244 @@ Before any learned model, the opacity equation itself was validated in simulatio
 
 ---
 
-## 2. Burnt vs fresh cane
+## 2. อ้อยไฟไหม้กับอ้อยสด
 
-**In plain words.** Farmers sometimes burn the field before cutting. Burnt cane is worth less, so the mill pays less for it. The system looks at the load and says burnt or fresh.
+**พูดแบบง่าย ๆ** ชาวไร่บางทีเผาไร่ก่อนตัด อ้อยไฟไหม้ราคาต่ำกว่า โรงงานจึงจ่ายน้อยลง ระบบจะดูของบนรถแล้วบอกว่าเป็นอ้อยไฟไหม้หรืออ้อยสด
 
-Burnt cane is penalised at the weighbridge, so grading each truckload has direct commercial value.
+อ้อยไฟไหม้ถูกหักราคาที่ตาชั่ง การคัดเกรดรถทีละคันจึงมีมูลค่าทางการค้าโดยตรง
 
-**Data.** 8,612 real mill CCTV images, 4 classes, 6 days, 2 cameras (`MPDC00`, `MPK00`),
-from the public `aimlsugarcane` Roboflow dataset (CC BY 4.0).
+**ข้อมูล** ภาพ CCTV จริงจากโรงงาน 8,612 ภาพ 4 คลาส 6 วัน 2 กล้อง (`MPDC00`, `MPK00`)
+มาจากชุดข้อมูลสาธารณะ `aimlsugarcane` บน Roboflow (CC BY 4.0)
 
 ![real burnt cane](figures/real_burnt_cane.jpg)
 
-*Real burnt cane: pale grey-brown, dry matte stalks, leaves burned away.*
+*อ้อยไฟไหม้จริง สีเทาอมน้ำตาลซีด ลำแห้งด้าน ใบไหม้หมด*
 
 ![real fresh cane](figures/real_fresh_cane.jpg)
 
-*Real fresh cane: leaves and sheaths still attached, lighter, and not "green".*
+*อ้อยสดจริง ยังมีใบและกาบติดอยู่ สีอ่อนกว่า และไม่ได้เขียว*
 
-**This killed the original pipeline.** Everything built before this audit assumed burnt cane
-was *glossy black* and fresh cane was *green*. Real burnt cane is neither. The separating
-feature is **leaves present or absent, plus a dry pale surface**, so all synthetic training
-data and every colour rule derived from it were invalid.
+**ข้อมูลชุดนี้ล้ม pipeline เดิมทั้งหมด** ทุกอย่างที่สร้างก่อนการตรวจสอบครั้งนี้ตั้งสมมติฐานว่า
+อ้อยไฟไหม้ต้อง *ดำเงา* และอ้อยสดต้อง *เขียว* ความจริงอ้อยไฟไหม้ไม่ใช่ทั้งสองอย่าง
+สิ่งที่แยกได้จริงคือ **มีใบติดอยู่หรือไม่ บวกกับผิวที่แห้งซีด** ดังนั้นข้อมูลเทรนสังเคราะห์ทั้งหมด
+และกฎเรื่องสีทุกข้อที่ได้มาจากมันจึงใช้ไม่ได้
 
-**Results.** EfficientNet-B0 @384px, 6 epochs, 5-fold cross-validation:
+**ผลลัพธ์** EfficientNet-B0 ที่ 384px, 6 epochs, cross-validation 5 fold
 
 | | recall | precision | accuracy |
 |---|---|---|---|
 | mean over 5 folds | 0.873 ±0.117 | 0.843 ±0.108 | 0.9586 ±0.0069 |
 | worst fold | 0.711 | 0.658 | 0.9500 |
 
-Mean F1 **0.854**, against a camera-only baseline of **0.417**.
+ค่า F1 เฉลี่ย **0.854** เทียบกับ baseline ที่เดาจากกล้องอย่างเดียวซึ่งได้ **0.417**
 
-**The catch, reported up front.** Class and camera are almost perfectly confounded. 94% of
-burnt examples come from one camera, 79% of fresh from the other, so a model can score well
-by learning *which camera took the picture*. Split per camera, recall is **0.944 on MPDC00
-and 0.415 on MPK00**. The lower number is the honest one, and every result here is reported
-per camera for that reason.
+**ข้อควรระวัง บอกไว้ตั้งแต่ต้น** คลาสกับกล้องพัวพันกันแทบสมบูรณ์ ตัวอย่างอ้อยไฟไหม้ 94% มาจากกล้องหนึ่ง
+และอ้อยสด 79% มาจากอีกกล้องหนึ่ง โมเดลจึงทำคะแนนดีได้ด้วยการเรียนว่า *ภาพนี้ถ่ายด้วยกล้องไหน*
+พอแยกวัดรายกล้อง recall อยู่ที่ **0.944 บน MPDC00 และ 0.415 บน MPK00**
+ตัวเลขที่ต่ำกว่าคือตัวที่ซื่อสัตย์กว่า และนี่คือเหตุผลที่ผลทุกตัวในนี้รายงานแยกรายกล้อง
 
 → [`src/burnt_classifier/`](src/burnt_classifier/)
 
 ---
 
-## 3. Burnt cane mixed in
+## 3. อ้อยไฟไหม้ปนมา
 
-**In plain words.** A truck is rarely all burnt or all fresh. Most loads are a mix. This finds how much of the top is burnt. There is no model here. It just counts bright stalks, because burnt piles have almost none.
+**พูดแบบง่าย ๆ** รถคันหนึ่งแทบไม่เคยเป็นอ้อยไฟไหม้ล้วนหรืออ้อยสดล้วน ส่วนใหญ่ปนกัน ตัวนี้หาว่าผิวด้านบนเป็นอ้อยไฟไหม้กี่ส่วน ตรงนี้ไม่มีโมเดลเลย แค่นับลำที่สีสว่าง เพราะกองอ้อยไฟไหม้แทบไม่มีลำสว่างอยู่เลย
 
-A load is rarely all-burnt or all-fresh. How much burnt surface is detectable before the
-call flips?
+ของบนรถแทบไม่เคยเป็นไฟไหม้ล้วนหรือสดล้วน คำถามคือผิวหน้าต้องเป็นอ้อยไฟไหม้กี่ส่วน
+คำตัดสินถึงจะพลิก
 
 ![scattered mix](figures/burn_mix_30pct_scattered.jpg)
 
 ![single-layer mix](figures/burn_mix_50pct_layer.jpg)
 
-*Burnt surface pixels composited onto a fresh pile. Scattered patches vs one contiguous layer.*
+*พิกเซลผิวอ้อยไฟไหม้ที่เอาไปซ้อนบนกองอ้อยสด เทียบแบบกระจายเป็นหย่อม กับแบบเป็นชั้นเดียวต่อเนื่อง*
 
-- **`black%` is useless.** Fresh cane in truck-bed shadow reads 36.6% dark; burnt cane reads
-  43-60%. The ranges overlap and texture gating does not separate them.
-- **`bright%` works.** Burnt piles contain no bright stalks at all (0.6-6%); fresh piles always
-  do, even in shadow (19-21%). A clean 3× gap.
-- The 8/15 cut-off is a placeholder from two clips and must be re-set on real footage.
-- Snapshots must be taken with the bed raised or after the dust settles, because dust brightens the
-  pile and breaks the rule.
+- **`black%` ใช้ไม่ได้** อ้อยสดที่อยู่ในเงากระบะวัดได้ 36.6% ว่าเข้ม ส่วนอ้อยไฟไหม้วัดได้
+  43-60% ช่วงค่าทับกัน และการกรองด้วยพื้นผิวก็แยกไม่ออก
+- **`bright%` ใช้ได้** กองอ้อยไฟไหม้ไม่มีลำสว่างเลย (0.6-6%) ส่วนกองอ้อยสดมีเสมอ
+  แม้จะอยู่ในเงา (19-21%) ห่างกันชัดเจน 3 เท่า
+- ค่าตัด 8/15 เป็นค่าชั่วคราวที่ได้จากคลิปแค่สองคลิป ต้องตั้งใหม่บนคลิปจริง
+- ต้องถ่ายภาพตอนกระบะยกขึ้นแล้ว หรือรอให้ฝุ่นจางก่อน เพราะฝุ่นทำให้กองดูสว่างขึ้น
+  จนกฎนี้ใช้ไม่ได้
 
 → [`src/burn_mixing/`](src/burn_mixing/)
 
 ---
 
-## 4. Dirty area
+## 4. พื้นที่สกปรก
 
-**In plain words.** Soil, tops and leaves come in with the cane, and the mill does not want to pay for dirt. This measures how much of the load is not real cane.
+**พูดแบบง่าย ๆ** ดิน ยอดอ้อย และใบ ติดมากับอ้อยด้วย และโรงงานไม่อยากจ่ายเงินซื้อดิน ตัวนี้วัดว่าของบนรถมีกี่ส่วนที่ไม่ใช่อ้อยจริง
 
-What share of a load is soil, tops and trash rather than millable cane.
+วัดว่าของบนรถเป็นดิน ยอด และเศษใบ แทนที่จะเป็นอ้อยที่หีบได้ กี่ส่วน
 
 ![dirty-area labels](figures/dirty_area_labels.jpg)
 
-*Annotation montage. The label standard itself is the bottleneck.*
+*ภาพรวมการ annotate ตัวมาตรฐานการติด label เองนั่นแหละคือคอขวด*
 
-**Result: inconclusive, with the reason documented rather than hidden.**
+**ผล: ยังสรุปไม่ได้ และเหตุผลถูกบันทึกไว้ ไม่ได้ซ่อน**
 
-- The `sugar-cane` class has **zero annotations** across all 158 images, so "fraction of the
-  pile" cannot be computed. Only *dirty ÷ (dirty + clean labelled area)* is measurable, and
-  that depends on how widely each annotator drew their boxes.
-- The set is **65 original images**, Roboflow-augmented to 158. Real unit: 54 trucks.
-- The published split leaks: one source image appears 3× in train and once in valid, which
-  is 10% of a 10-image validation set.
-- The cross-camera score of 0.842 **exactly equals** a majority-class baseline. The model
-  learned nothing.
+- คลาส `sugar-cane` **ไม่มี annotation เลยสักอัน** ในทั้ง 158 ภาพ ดังนั้น "สัดส่วนของ
+  กอง" จึงคำนวณไม่ได้ วัดได้แค่ *สกปรก ÷ (สกปรก + พื้นที่สะอาดที่ติด label ไว้)*
+  ซึ่งขึ้นอยู่กับว่าคนติด label แต่ละคนลากกรอบกว้างแค่ไหน
+- ชุดข้อมูลมี **ภาพต้นฉบับ 65 ภาพ** แล้ว Roboflow ขยายเป็น 158 หน่วยจริงคือรถ 54 คัน
+- การแบ่งชุดที่เผยแพร่มารั่ว ภาพต้นฉบับหนึ่งภาพโผล่ใน train 3 ครั้งและใน valid อีก 1 ครั้ง ซึ่ง
+  คิดเป็น 10% ของชุด validation ที่มีแค่ 10 ภาพ
+- คะแนนข้ามกล้อง 0.842 **เท่ากันเป๊ะ** กับ baseline ที่เดาคลาสที่เจอบ่อยที่สุด แปลว่าโมเดล
+  ไม่ได้เรียนรู้อะไรเลย
 
-This does not show the task is impossible. It shows 65 images cannot decide it.
+นี่ไม่ได้แปลว่าโจทย์นี้ทำไม่ได้ แต่แปลว่าภาพ 65 ภาพตัดสินมันไม่ได้
 
 → [`src/dirty_area/`](src/dirty_area/)
 
 ---
 
-## 5. Acoustic contaminants
+## 5. สิ่งปนเปื้อนจากเสียง
 
-**In plain words.** Sand, rock and metal hide inside the load and break the machine. A camera cannot see inside. A microphone can hear them land. The sound is turned into a picture of its frequencies, and a small model reads that picture.
+**พูดแบบง่าย ๆ** ทราย หิน และเหล็ก ซ่อนอยู่ในกองอ้อยและทำให้เครื่องพัง กล้องมองเข้าไปข้างในไม่ได้ แต่ไมโครโฟนได้ยินตอนมันตกกระทบ เสียงถูกแปลงเป็นภาพของความถี่ แล้วโมเดลเล็ก ๆ อ่านภาพนั้น
 
-Metal, rock and sand riding in with the cane damage the shredder. Cameras cannot see inside a
-load, but a microphone can hear it hit the carrier.
+เหล็ก หิน และทรายที่ติดมากับอ้อยทำให้ชุดสับเสียหาย กล้องมองเข้าไปในกองไม่ได้
+แต่ไมโครโฟนได้ยินตอนมันกระทบสายพาน
 
-**Pipeline.** Generate impact and sand SFX with Stable Audio Open on a GTX 1060, filter them
-through an acceptance test (1-10 kHz energy ≥0.35, attack ≤20 ms, decay ≤800 ms, peak/mean ≥6),
-mix into **real** tipping-yard background at SNR +12 → −12 dB with millisecond ground truth,
-then train a log-mel CNN. 57 clips generated, 30 passed, 80 test clips, 418 events.
+**ขั้นตอน** สร้างเสียงกระแทกและเสียงทรายด้วย Stable Audio Open บนการ์ด GTX 1060 แล้วกรองผ่านเกณฑ์รับ
+(พลังงานช่วง 1-10 kHz ≥0.35, attack ≤20 ms, decay ≤800 ms, peak/mean ≥6)
+จากนั้นผสมลงบนเสียงพื้นหลัง **จริง** จากลานเทที่ SNR +12 → −12 dB พร้อม ground truth ระดับมิลลิวินาที
+แล้วเทรน log-mel CNN สร้างคลิป 57 คลิป ผ่านเกณฑ์ 30 คลิป ทดสอบ 80 คลิป รวม 418 เหตุการณ์
 
-Tested against real yard audio the model never saw:
+ทดสอบกับเสียงจริงจากลานเทที่โมเดลไม่เคยได้ยิน
 
-| method | impact R / P | sand R / P | false alarms/min |
+| วิธี | กระแทก R / P | ทราย R / P | แจ้งผิด/นาที |
 |---|---|---|---|
-| energy threshold rule | 0.58 / 0.25 | 0.35 / n/a | 7.6 |
+| กฎตัดจากพลังงาน | 0.58 / 0.25 | 0.35 / n/a | 7.6 |
 | **CNN, 0.5 s window** | 0.47 / **0.59** | **0.94 / 1.00** | **2.2** |
 | CNN, 0.25 s window | **0.59** / 0.35 | 0.98 / 0.995 | 7.2 |
 
-**Sand flow is solved.** 94-98% recall at essentially perfect precision on real audio, the
-strongest result in the project. The CNN beats the rule on precision by 2.4× and cuts false
-alarms 3.5×, because it learns *not* to fire on cane hitting the rail, chains and hammers.
+**เรื่องทรายถือว่าแก้ได้แล้ว** recall 94-98% ที่ precision แทบสมบูรณ์บนเสียงจริง
+เป็นผลที่แข็งแรงที่สุดในโปรเจ็คนี้ CNN ชนะกฎธรรมดาด้าน precision 2.4 เท่า และลดการแจ้งเตือนผิดลง 3.5 เท่า
+เพราะมันเรียนรู้ที่จะ *ไม่* ตอบสนองต่อเสียงอ้อยกระทบราง โซ่ และค้อน
 
 → [`src/acoustic/`](src/acoustic/)
 
 ---
 
-## 6. Cane flow on the carrier
+## 6. อ้อยไหลบนสายพาน
 
-**In plain words.** After tipping, the cane rides a belt into the mill. The belt never stops, so the system must keep up. It watches the belt and says how much of it is leaf instead of cane.
+**พูดแบบง่าย ๆ** หลังเทเสร็จ อ้อยจะขึ้นสายพานเข้าโรงงาน สายพานไม่เคยหยุด ระบบจึงต้องตามให้ทัน มันเฝ้าดูสายพานแล้วบอกว่ามีใบปนมากี่ส่วน
 
-Once the cane is tipped it rides a carrier into the shredder. Segmenting the leaf fraction of
-the moving mat gives a continuous quality signal instead of one snapshot per truck.
+พอเทอ้อยลงแล้ว อ้อยจะไหลไปตามสายพานเข้าชุดสับ การแยกสัดส่วนใบบนแผ่นอ้อยที่เคลื่อนที่
+ให้สัญญาณคุณภาพแบบต่อเนื่อง แทนที่จะได้ภาพนิ่งแค่ภาพเดียวต่อรถหนึ่งคัน
 
 ![cane flow segmentation](media/caneflow_real.gif)
 
-*Leaf area segmented on real mill video, live percentage overlaid, at **69.9 fps end to end**.*
+*แยกพื้นที่ใบบนวิดีโอจริงในโรงงาน พร้อมแสดงเปอร์เซ็นต์สด ที่ **69.9 fps ตลอดสาย***
 
 ![cane flow grid](figures/cane_flow_grid.jpg)
 
-*Frames sampled across a run. Labels were bootstrapped by self-training from a small hand-labelled seed.*
+*เฟรมที่สุ่มมาตลอดการรัน label เริ่มจากชุดเล็กที่ทำมือ แล้วให้โมเดลสอนตัวเองต่อ*
 
-The interesting constraint here is throughput, not accuracy: a carrier never stops, so the
-segmenter has to keep up with the belt on hardware the mill already owns.
+ข้อจำกัดที่น่าสนใจของงานนี้คือความเร็ว ไม่ใช่ความแม่น สายพานไม่เคยหยุด
+ตัวแยกภาพจึงต้องตามสายพานให้ทันบนเครื่องที่โรงงานมีอยู่แล้ว
 
 → [`src/cane_flow/`](src/cane_flow/)
 
 ---
 
-## 7. Thai licence plate OCR
+## 7. อ่านป้ายทะเบียนไทย
 
-**In plain words.** Every truck needs the right farmer's name on it, so the plate must be read. The rule here is simple: it is better to say nothing than to say the wrong number. If the picture is bad, it asks a person.
+**พูดแบบง่าย ๆ** รถทุกคันต้องผูกกับชื่อชาวไร่ที่ถูกต้อง จึงต้องอ่านป้ายทะเบียนให้ได้ กฎของงานนี้ง่ายมาก ไม่ตอบดีกว่าตอบเลขผิด ถ้าภาพไม่ชัดก็ส่งให้คนดูแทน
 
-Reading the truck's plate at the weighbridge so each load attaches to the right supplier.
-Thai lorry plates are numeric (`83-6237`) in a single national font, which makes them a
-better-posed problem than general OCR.
+อ่านป้ายทะเบียนรถที่ตาชั่ง เพื่อให้ของแต่ละคันผูกกับผู้ส่งที่ถูกต้อง
+ป้ายรถบรรทุกไทยเป็นตัวเลข (`83-6237`) และใช้ฟอนต์มาตรฐานเดียวทั้งประเทศ
+โจทย์นี้จึงตั้งได้ชัดกว่างาน OCR ทั่วไป
 
-Two independent engines are implemented:
+ทำไว้สองตัวอ่านที่เป็นอิสระจากกัน
 
-| engine | how it reads | why it exists |
+| ตัวอ่าน | อ่านยังไง | ทำไมต้องมี |
 |---|---|---|
-| **ONNX + OpenCV** | learned detector, ONNX reader, cross-frame voting | accuracy |
-| **pure CV** | morphology → connected components → template correlation | zero ML, runs on a Raspberry Pi, every step explainable |
+| **ONNX + OpenCV** | detector ที่เทรนมา, ONNX reader, โหวตข้ามเฟรม | เอาความแม่น |
+| **pure CV** | morphology → connected components → เทียบแม่แบบ | ไม่ใช้ ML เลย รันบน Raspberry Pi ได้ อธิบายได้ทุกขั้น |
 
-**The design rule: if it answers, it must be right.** The goal is not reading every truck.
-It is that every plate written to the CSV is trustworthy. Weak evidence returns
-`accepted=false` with a reason and goes to a human. One wrong row costs more than ten
-confirmations.
+**กฎการออกแบบ: ถ้าจะตอบ ต้องถูก** เป้าหมายไม่ใช่อ่านให้ได้ทุกคัน
+แต่คือทุกแถวที่เขียนลง CSV ต้องเชื่อถือได้ ถ้าหลักฐานอ่อนจะคืน `accepted=false`
+พร้อมเหตุผล แล้วส่งให้คนตรวจ หนึ่งแถวที่ผิดแพงกว่าการยืนยันสิบครั้ง
 
-Strict mode, 60-image stress set (plates composited onto truck scenes, then degraded with
-blur, skew, darkness, glare, noise, JPEG q40, small size, off-template fonts), CPU only:
+โหมดเข้มงวด ชุดทดสอบโหด 60 ภาพ (เอาป้ายไปซ้อนบนภาพรถ แล้วทำให้แย่ลงด้วยภาพเบลอ เอียง มืด
+แสงสะท้อน สัญญาณรบกวน JPEG คุณภาพ 40 ภาพเล็ก และฟอนต์ที่ไม่ตรงแม่แบบ) รันบน CPU อย่างเดียว
 
-| | before tuning | after tuning |
+| | ก่อนปรับ | หลังปรับ |
 |---|---|---|
-| answered | 48/60 | **51/60** |
-| of those, correct | 48 | **51** |
-| **of those, wrong** | **0** | **0** |
-| sent to a human | 12 | 9 |
-| median time/image | 2,236 ms | **182 ms** |
+| ตอบ | 48/60 | **51/60** |
+| ในนั้นถูก | 48 | **51** |
+| **ในนั้นผิด** | **0** | **0** |
+| ส่งให้คนดู | 12 | 9 |
+| เวลามัธยฐานต่อภาพ | 2,236 ms | **182 ms** |
 
-The row that matters is **wrong = 0**; "sent to a human" is the price paid for it.
-This is a controlled synthetic set for comparing engines and catching regressions. It is
-**not** a field accuracy, which depends on camera, lighting and how dirty the plate is.
+แถวที่สำคัญคือ **ผิด = 0** ส่วน "ส่งให้คนดู" คือราคาที่จ่ายเพื่อให้ได้ตัวเลขนั้น
+ชุดนี้เป็นชุดสังเคราะห์ที่คุมตัวแปรไว้ ใช้เทียบตัวอ่านและจับการถดถอยของโค้ด
+มัน **ไม่ใช่** ความแม่นในสนามจริง ซึ่งขึ้นกับกล้อง แสง และความสกปรกของป้าย
 
 → [`src/plate_ocr/`](src/plate_ocr/)
 
 ---
 
-## 8. Is there cane on the truck?
+## 8. บนรถมีอ้อยหรือเปล่า
 
-**In plain words.** Before anything else, one camera checks if the truck is full or empty. There is no model at all. It looks at edges and movement, and it runs in under 4 milliseconds.
+**พูดแบบง่าย ๆ** ก่อนอย่างอื่นทั้งหมด กล้องหนึ่งตัวเช็คว่ารถเต็มหรือว่าง ตรงนี้ไม่มีโมเดลเลยสักตัว มันดูแค่ขอบกับการเคลื่อนไหว และทำงานเสร็จในไม่ถึง 4 มิลลิวินาที
 
-The side camera decides whether an arriving truck is loaded or empty, and triggers the paired
-capture with the front camera.
+กล้องด้านข้างตัดสินว่ารถที่เข้ามามีของหรือว่างเปล่า แล้วสั่งให้กล้องด้านหน้าถ่ายคู่กัน
 
 ![live pipeline](figures/canegate_live.png)
 
 ![what the pipeline sees](figures/canegate_pipeline_view.png)
 
-*Every stage the system sees, from locating the truck to the load decision.*
+*ทุกขั้นที่ระบบมองเห็น ตั้งแต่หาตำแหน่งรถจนถึงการตัดสินว่ามีของหรือไม่*
 
-Measured on CPU, no GPU:
+วัดบน CPU ไม่ใช้ GPU
 
-| layer | frequency | time |
+| ชั้นงาน | ความถี่ | เวลา |
 |---|---|---|
-| computer vision (motion + tracker) | every frame | **3.9 ms**, headroom to ~250 fps |
-| truck localisation (YOLO11n, web worker) | occasional | 280 ms |
-| cane classification (cue + fusion) | once per truck | 9 ms |
-| plate read (ONNX + verification) | once per truck | 0.2-2.5 s |
+| computer vision (motion + tracker) | ทุกเฟรม | **3.9 ms** เหลือหัวถึงราว 250 fps |
+| หาตำแหน่งรถ (YOLO11n, web worker) | เป็นครั้งคราว | 280 ms |
+| ตัดสินว่ามีอ้อย (cue + fusion) | ครั้งเดียวต่อรถ | 9 ms |
+| อ่านป้าย (ONNX + verification) | ครั้งเดียวต่อรถ | 0.2-2.5 s |
 
-The cane decision itself uses **no trained model**. It is cue fusion over classical features,
-with a test suite pinning the Python and browser implementations to identical numbers. Runs
-fully offline at the weighbridge.
+ตัวตัดสินว่ามีอ้อยหรือไม่ **ไม่ใช้โมเดลที่เทรนมาเลย** มันคือการรวมสัญญาณจากฟีเจอร์แบบคลาสสิก
+และมีชุดทดสอบที่ตรึงให้เวอร์ชัน Python กับเวอร์ชันเบราว์เซอร์ได้ตัวเลขตรงกันเป๊ะ
+ทำงานออฟไลน์เต็มรูปแบบที่ตาชั่ง
 
 → [`src/cane_on_truck/`](src/cane_on_truck/)
 
 ---
 
-## 9. Stalk segmentation
+## 9. ตีเส้นลำอ้อย
 
-**In plain words.** This draws the shape of each stalk. On its own it is not useful. It helps the other detectors measure things properly instead of guessing from colour.
+**พูดแบบง่าย ๆ** ตัวนี้วาดรูปทรงของลำอ้อยแต่ละลำ ลำพังตัวมันเองไม่ได้มีประโยชน์ แต่มันช่วยให้ตัวตรวจจับอื่นวัดค่าได้จริง แทนที่จะเดาจากสีของทั้งภาพ
 
-Supporting work: separating individual stalks so downstream features (leaf fraction, stalk
-length, orientation) can be measured rather than guessed from whole-image colour.
+งานสนับสนุน แยกลำอ้อยออกจากกันทีละลำ เพื่อให้ฟีเจอร์ปลายทาง (สัดส่วนใบ ความยาวลำ ทิศทางการวาง)
+วัดได้จริง แทนที่จะเดาจากสีของทั้งภาพ
 
 ![stalk segmentation](figures/stalk_seg_dino.jpg)
 
-*Frozen DINOv2 backbone with a two-layer head, trained on 31 hand-labelled images.*
+*ใช้ DINOv2 แบบแช่แข็งเป็น backbone ต่อด้วย head สองชั้น เทรนบนภาพที่ติด label ด้วยมือ 31 ภาพ*
 
 → [`src/stalk_seg/`](src/stalk_seg/)
 
 ---
 
-## How results are reported here
+## ผลลัพธ์ในนี้รายงานกันแบบไหน
 
-1. Numbers come from held-out data split along the structure that matters, by day and by
-   camera, never a random shuffle.
-2. Accuracy is always paired with coverage: how many cases the model agreed to answer at all.
-3. Failures are written down with the same weight as successes. The burnt-cane colour
-   assumption, the dirty-area dataset and the dust test set are all documented as unusable,
-   because a number that cannot be defended is worse than no number.
+1. ตัวเลขมาจากข้อมูลที่กันไว้ทดสอบ แบ่งตามโครงสร้างที่มีผลจริง คือแบ่งตามวันและตามกล้อง
+   ไม่ใช่สุ่มสลับมั่ว ๆ
+2. รายงานความแม่นคู่กับ coverage เสมอ คือโมเดลยอมตอบไปกี่เคส
+3. ความล้มเหลวถูกบันทึกด้วยน้ำหนักเท่ากับความสำเร็จ ทั้งสมมติฐานเรื่องสีของอ้อยไฟไหม้
+   ชุดข้อมูลพื้นที่สกปรก และชุดทดสอบฝุ่น ถูกระบุไว้ว่าใช้ไม่ได้
+   เพราะตัวเลขที่ปกป้องไม่ได้แย่กว่าการไม่มีตัวเลข
 
-The methodology this follows is packaged separately as
+ระเบียบวิธีที่ใช้ในนี้ถูกแพ็กแยกไว้ต่างหากที่
 [`model-proof-loop`](https://github.com/watcharaponthod-code/model-proof-loop).
 
-## Credits
+## ที่มาและเครดิต
 
-Real mill imagery from the `aimlsugarcane` Roboflow dataset (CC BY 4.0).
-Carrier and tippler footage from public video; audio backgrounds recorded at the yard.
-Code MIT licensed.
+ภาพจริงจากโรงงานมาจากชุดข้อมูล `aimlsugarcane` บน Roboflow (CC BY 4.0)
+คลิปสายพานและจุดเทมาจากวิดีโอสาธารณะ ส่วนเสียงพื้นหลังอัดที่ลานเทจริง
+โค้ดเผยแพร่ภายใต้สัญญาอนุญาต MIT
