@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 540" width="1040" height="540" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <rect width="1040" height="540" fill="#ffffff"/>
+
+  <text x="24" y="38" font-size="20" font-weight="600" fill="#1f2328">How each problem was solved</text>
+  <text x="24" y="62" font-size="14" fill="#636c76">Not every problem needs a neural network. Two here did not get one.</text>
+
+  <!-- column 1: no model -->
+  <rect x="24" y="90" width="310" height="420" rx="8" fill="#fff8f2" stroke="#ffd8b5"/>
+  <text x="46" y="122" font-size="16" font-weight="600" fill="#bc4c00">No model</text>
+  <text x="46" y="144" font-size="12.5" fill="#8c6a4f">I write the rule myself. The computer</text>
+  <text x="46" y="161" font-size="12.5" fill="#8c6a4f">only looks at colour, edges and shape.</text>
+
+  <rect x="46" y="182" width="266" height="86" rx="6" fill="#ffffff" stroke="#ffd8b5"/>
+  <text x="62" y="206" font-size="13.5" font-weight="600" fill="#1f2328">cane_on_truck</text>
+  <text x="62" y="226" font-size="12" fill="#636c76">Is the truck loaded or empty?</text>
+  <text x="62" y="244" font-size="12" fill="#636c76">Edges and motion only.</text>
+  <text x="62" y="260" font-size="11.5" fill="#bc4c00">3.9 ms a frame, no GPU</text>
+
+  <rect x="46" y="284" width="266" height="86" rx="6" fill="#ffffff" stroke="#ffd8b5"/>
+  <text x="62" y="308" font-size="13.5" font-weight="600" fill="#1f2328">burn_mixing</text>
+  <text x="62" y="328" font-size="12" fill="#636c76">How much burnt cane is mixed in?</text>
+  <text x="62" y="346" font-size="12" fill="#636c76">Count bright stalks by colour.</text>
+  <text x="62" y="362" font-size="11.5" fill="#bc4c00">bright pixels split them 3 to 1</text>
+
+  <text x="46" y="404" font-size="12.5" fill="#8c6a4f">Why stop here: it already works,</text>
+  <text x="46" y="422" font-size="12.5" fill="#8c6a4f">it is fast, and I can explain every</text>
+  <text x="46" y="440" font-size="12.5" fill="#8c6a4f">step to the people at the mill.</text>
+
+  <!-- column 2: model + rule -->
+  <rect x="358" y="90" width="310" height="420" rx="8" fill="#f2f9ff" stroke="#b6e3ff"/>
+  <text x="380" y="122" font-size="16" font-weight="600" fill="#0969da">Model plus a rule</text>
+  <text x="380" y="144" font-size="12.5" fill="#4a7ba7">A model gives an answer. My own</text>
+  <text x="380" y="161" font-size="12.5" fill="#4a7ba7">check can throw that answer away.</text>
+
+  <rect x="380" y="182" width="266" height="86" rx="6" fill="#ffffff" stroke="#b6e3ff"/>
+  <text x="396" y="206" font-size="13.5" font-weight="600" fill="#1f2328">dust_opacity</text>
+  <text x="396" y="226" font-size="12" fill="#636c76">How thick is the dust cloud?</text>
+  <text x="396" y="244" font-size="12" fill="#636c76">The check asks: is it really haze?</text>
+  <text x="396" y="260" font-size="11.5" fill="#0969da">stops alarms on dark cane piles</text>
+
+  <rect x="380" y="284" width="266" height="86" rx="6" fill="#ffffff" stroke="#b6e3ff"/>
+  <text x="396" y="308" font-size="13.5" font-weight="600" fill="#1f2328">plate_ocr</text>
+  <text x="396" y="328" font-size="12" fill="#636c76">Read the number on the plate.</text>
+  <text x="396" y="346" font-size="12" fill="#636c76">Two readers, one with no model.</text>
+  <text x="396" y="362" font-size="11.5" fill="#0969da">51 of 60 answered, 0 wrong</text>
+
+  <text x="380" y="404" font-size="12.5" fill="#4a7ba7">Why do this: a model that is sure</text>
+  <text x="380" y="422" font-size="12.5" fill="#4a7ba7">and wrong costs more than a model</text>
+  <text x="380" y="440" font-size="12.5" fill="#4a7ba7">that says "I do not know".</text>
+
+  <!-- column 3: trained model -->
+  <rect x="692" y="90" width="324" height="420" rx="8" fill="#f2fbf5" stroke="#aceebb"/>
+  <text x="714" y="122" font-size="16" font-weight="600" fill="#1a7f37">Trained model</text>
+  <text x="714" y="144" font-size="12.5" fill="#4a8a5e">I show it many examples and it</text>
+  <text x="714" y="161" font-size="12.5" fill="#4a8a5e">learns the pattern by itself.</text>
+
+  <rect x="714" y="182" width="280" height="64" rx="6" fill="#ffffff" stroke="#aceebb"/>
+  <text x="730" y="204" font-size="13.5" font-weight="600" fill="#1f2328">burnt_classifier</text>
+  <text x="730" y="223" font-size="12" fill="#636c76">Burnt cane or fresh cane?</text>
+  <text x="730" y="239" font-size="11.5" fill="#1a7f37">8,612 real photos from the mill</text>
+
+  <rect x="714" y="258" width="280" height="64" rx="6" fill="#ffffff" stroke="#aceebb"/>
+  <text x="730" y="280" font-size="13.5" font-weight="600" fill="#1f2328">acoustic</text>
+  <text x="730" y="299" font-size="12" fill="#636c76">Hear sand, rock or metal.</text>
+  <text x="730" y="315" font-size="11.5" fill="#1a7f37">sand: 94% found, 0 false hits</text>
+
+  <rect x="714" y="334" width="280" height="64" rx="6" fill="#ffffff" stroke="#aceebb"/>
+  <text x="730" y="356" font-size="13.5" font-weight="600" fill="#1f2328">cane_flow</text>
+  <text x="730" y="375" font-size="12" fill="#636c76">How much leaf on the belt?</text>
+  <text x="730" y="391" font-size="11.5" fill="#1a7f37">70 frames a second, live</text>
+
+  <rect x="714" y="410" width="280" height="64" rx="6" fill="#ffffff" stroke="#aceebb"/>
+  <text x="730" y="432" font-size="13.5" font-weight="600" fill="#1f2328">dirty_area · stalk_seg</text>
+  <text x="730" y="451" font-size="12" fill="#636c76">Outline the soil, trash and stalks.</text>
+  <text x="730" y="467" font-size="11.5" fill="#1a7f37">too few labels so far, said openly</text>
+</svg>
